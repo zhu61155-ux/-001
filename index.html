@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>大学课程表 · 教务课表导入工具</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f7cff">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="课程表">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div id="printHeader" class="print-only"></div>
+
+  <header class="app-bar">
+    <div class="brand">
+      <span class="brand-icon">📅</span>
+      <div class="brand-text">
+        <b>大学课程表</b>
+        <span id="semesterBadge" class="badge"></span>
+      </div>
+    </div>
+    <div class="week-nav">
+      <button id="btnPrevWeek" class="icon-btn" title="上一周">◀</button>
+      <div class="week-label">
+        <span id="weekNum">第 1 周</span>
+        <span id="weekRange" class="sub"></span>
+      </div>
+      <button id="btnNextWeek" class="icon-btn" title="下一周">▶</button>
+      <button id="btnToday" class="btn accent" title="跳回本周">今天</button>
+    </div>
+    <div class="app-actions">
+      <button id="btnImport" class="btn primary">⬇ 导入课表</button>
+      <button id="btnExport" class="btn">⬆ 导出</button>
+      <button id="btnSettings" class="btn">⚙ 设置</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <input id="searchBox" type="search" placeholder="搜索课程 / 教师 / 教室…">
+    <div class="seg">
+      <button id="viewGridBtn" class="on">周视图</button>
+      <button id="viewListBtn">列表</button>
+    </div>
+    <span id="statLine" class="stat"></span>
+    <span class="spacer"></span>
+    <button id="btnAdd" class="btn ghost">＋ 手动添加</button>
+    <button id="btnSample" class="btn ghost">载入示例</button>
+    <button id="btnPrint" class="btn ghost">🖨 打印</button>
+  </div>
+
+  <main>
+    <div id="emptyState" class="empty">
+      <div class="empty-icon">🗓</div>
+      <h2>还没有课程表</h2>
+      <p class="muted">从教务系统导入课表，或先载入示例数据体验：</p>
+      <div class="empty-actions">
+        <button id="btnEmptyImport" class="btn primary">⬇ 导入课表</button>
+        <button id="btnEmptySample" class="btn">载入示例数据</button>
+        <button id="btnEmptyAdd" class="btn ghost">＋ 手动添加</button>
+      </div>
+      <ol class="empty-guide">
+        <li>登录学校教务系统，打开「我的课表 / 课表查询」页面</li>
+        <li>按 <b>Ctrl+U</b> 或右键「查看网页源代码」，全选复制</li>
+        <li>点击「导入课表」→ 粘贴 HTML → 解析预览 → 确认导入</li>
+        <li>也可以在教务系统里导出 <b>.xls / .xlsx</b> 课表文件后直接上传</li>
+      </ol>
+    </div>
+
+    <div id="gridScroll" class="grid-scroll">
+      <div id="gridWrap" class="grid-wrap"></div>
+    </div>
+
+    <div id="listView" class="list-view hidden"></div>
+    <div id="listCount" class="list-count muted hidden"></div>
+  </main>
+
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // PWA：仅在 http(s) 环境下注册 Service Worker（file:// 双击打开时不注册）
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
