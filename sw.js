@@ -1,8 +1,8 @@
-/**
+﻿/**
  * sw.js — Service Worker：缓存应用外壳，实现离线使用与 PWA 安装
  * 策略：缓存优先（cache-first），首次访问后即可离线打开。
  */
-const CACHE = "course-schedule-v1";
+const CACHE = "course-schedule-v2";
 
 const ASSETS = [
   "./",

@@ -383,11 +383,19 @@
         "</div>" +
         "<div class='tab-pane hidden' id='pane-excel'>" +
         "<p class='muted'>支持教务系统导出的 <b>.xls / .xlsx</b> 课表文件（自动识别“列表式”和“表格式”两种格式）。</p>" +
-        "<label class='drop-zone' id='excelZone'>📄 点击选择 Excel 文件<input type='file' id='impFile' accept='.xls,.xlsx' hidden></label>" +
+        "<div class='drop-zone' id='excelZone'>" +
+        "<span class='dz-title'>📄 点击选择 Excel 文件</span>" +
+        "<span class='dz-file' id='excelFileName'></span>" +
+        "<input type='file' id='impFile' class='dz-input' accept='.xls,.xlsx'>" +
+        "</div>" +
         "</div>" +
         "<div class='tab-pane hidden' id='pane-json'>" +
         "<p class='muted'>恢复本应用之前导出的 <b>.json</b> 备份（会完全替换当前数据）。</p>" +
-        "<label class='drop-zone' id='jsonZone'>🗂 点击选择 JSON 备份文件<input type='file' id='impJson' accept='.json' hidden></label>" +
+        "<div class='drop-zone' id='jsonZone'>" +
+        "<span class='dz-title'>🗂 点击选择 JSON 备份文件</span>" +
+        "<span class='dz-file' id='jsonFileName'></span>" +
+        "<input type='file' id='impJson' class='dz-input' accept='.json,application/json'>" +
+        "</div>" +
         "</div>" +
         "<div id='impPreview'></div>",
       footerHtml:
@@ -420,34 +428,57 @@
     };
 
     const fileInput = b.querySelector("#impFile");
-    b.querySelector("#excelZone").onclick = () => fileInput.click();
-    fileInput.onchange = async () => {
+    const excelName = b.querySelector("#excelFileName");
+    const jsonInput = b.querySelector("#impJson");
+    const jsonName = b.querySelector("#jsonFileName");
+
+    /** 读取文本文件：优先 File.text()，否则退回 FileReader */
+    async function readTextFile(f) {
+      if (typeof f.text === "function") return f.text();
+      return U.fileToText(f);
+    }
+
+    // 注意：不再给 drop-zone 绑定 click → input.click()，否则会与 input 自身点击
+    // 叠加触发，导致部分安卓浏览器打开两次选择器、change 事件被吞。
+    fileInput.addEventListener("change", async () => {
       const f = fileInput.files[0];
+      fileInput.value = ""; // 允许重复选择同一个文件
       if (!f) return;
+      excelName.classList.remove("err");
+      excelName.textContent = "已选择：" + f.name;
       try {
-        if (!window.XLSX) { U.toast("Excel 解析库未加载", "error"); return; }
+        if (!window.XLSX) throw new Error("Excel 解析库未加载");
         const buf = await U.fileToArrayBuffer(f);
         const r = parseWorkbook(buf);
-        if (!r.ok) { U.toast(r.error, "error"); showImportPreview([]); return; }
+        if (!r.ok) {
+          showImportPreview([]);
+          excelName.textContent = "解析失败：" + r.error;
+          excelName.classList.add("err");
+          U.toast(r.error, "error");
+          return;
+        }
         pendingImport = r.sessions;
         showImportPreview(r.sessions);
         foot.querySelector("#impConfirm").disabled = false;
         U.toast("解析成功：" + r.sessions.length + " 条排课", "success");
       } catch (e) {
+        excelName.textContent = "读取失败：" + e.message;
+        excelName.classList.add("err");
         U.toast("读取 Excel 失败：" + e.message, "error");
       }
-    };
+    });
 
-    const jsonInput = b.querySelector("#impJson");
-    b.querySelector("#jsonZone").onclick = () => jsonInput.click();
-    jsonInput.onchange = async () => {
+    jsonInput.addEventListener("change", async () => {
       const f = jsonInput.files[0];
+      jsonInput.value = "";
       if (!f) return;
+      jsonName.classList.remove("err");
+      jsonName.textContent = "已选择：" + f.name;
       try {
-        const text = await U.fileToText(f);
+        const text = await readTextFile(f);
         const data = JSON.parse(text);
         if (!data || (!Array.isArray(data.courses) && !Array.isArray(data.sessions))) {
-          U.toast("不是有效的备份文件", "error"); return;
+          throw new Error("文件内容缺少 courses / sessions 字段");
         }
         const restored = S.normalize(data);
         const ok = await U.confirmDialog("恢复备份",
@@ -457,9 +488,11 @@
         save(); viewWeek = computeViewWeek(); render(); m.close();
         U.toast("备份已恢复", "success");
       } catch (e) {
+        jsonName.textContent = "导入失败：" + e.message;
+        jsonName.classList.add("err");
         U.toast("备份文件解析失败：" + e.message, "error");
       }
-    };
+    });
 
     foot.querySelector("#impCancel").onclick = () => m.close();
     foot.querySelector("#impConfirm").onclick = () => {
